@@ -3,6 +3,7 @@ from discord.ext import commands
 import getSave
 import ticTacToe
 from PIL import Image
+import os
 
 # TO DO:
 # add turn as an attribute of gamerooms.txt - Done!
@@ -71,7 +72,7 @@ async def emptyAll():
 
 @bot.command(pass_context=True)
 async def newGame(ctx, *args):
-    """starts a new game of tic-tac-toe with the initiator and the challenged"""
+    """starts a new game chosen by the challenger played with the challenged"""
     #args of form e.g. ("martian chess", "player 2", "player 3", "player 4"...)
     knownGames = ("tic-tac-toe")
     chosenGame = args[0]
@@ -98,12 +99,17 @@ async def newGame(ctx, *args):
                         gameRooms[i].append(chosenGame)
                         gameRooms[i].append("1")
                         gameRooms[i].append(ctx.message.author.name)
-                        #generalise next command
-                        theBoard = ticTacToe.TicTacToe()
+                        game = None
+                        if chosenGame == "tic-tac-toe":
+                            game = ticTacToe.TicTacToe()
+                            filename = "ticTacToe"
+                        #other games go here
+                        filename += str(i+1)
+                        filename += ".txt"
+                        getSave.save(game, filename)
                         for j in range(len(args)-1):
                             gameRooms[i].append(args[j+1])
                         getSave.save(gameRooms, "gamerooms.txt")
-                        getSave.save(theBoard, "board.txt")
                         success = True
                         break
                 if not success:
@@ -111,7 +117,7 @@ async def newGame(ctx, *args):
             else:
                 await bot.say("Those are not valid players!")
         else:
-            await bot.say("I'm sorry, I don't know: \"" + arg[0] + "\"")
+            await bot.say("I'm sorry, I don't know: \"" + args[0] + "\"")
     else:
         await bot.say("I'm sorry, I didn't understand that.")
 
@@ -129,8 +135,9 @@ async def place(ctx, move : int):
     elif channel == "gameroom-4":
         room = 4
 
+    filename = "ticTacToe" + str(room) + ".txt"
     gameRooms = getSave.get("gamerooms.txt")
-    theBoard = getSave.get("board.txt")
+    theBoard = getSave.get(filename)
     if room > 0:
         turn = int(gameRooms[room-1][1])
         if ctx.message.author.name == gameRooms[room-1][((turn + 1) % 2) + 2]:
@@ -142,12 +149,13 @@ async def place(ctx, move : int):
             try:
                 theBoard.place(move, sym)
                 iBoard = theBoard.render()
-                iBoard.save("iBoard.png")
-                await bot.upload("iBoard.png")
+                iBoardFileName = "iBoard" + str(room) + ".png"
+                iBoard.save(iBoardFileName)
+                await bot.upload(iBoardFileName)
                 if theBoard.getWinner() == None:
                     turn += 1
                     gameRooms[room-1][1] = str(turn)
-                    getSave.save(theBoard, "board.txt")
+                    getSave.save(theBoard, filename)
                     getSave.save(gameRooms, "gamerooms.txt")
                 else:
                     if theBoard.getWinner() == "X":
