@@ -12,6 +12,7 @@ TOKEN="token.txt"
 
 description = '''CRC Gamemaster Bot'''
 bot = commands.Bot(command_prefix='$', description=description)
+knownGames = ("tic-tac-toe")
 
 @bot.event
 async def on_message(message):
@@ -74,7 +75,7 @@ async def emptyAll():
 async def newGame(ctx, *args):
     """starts a new game chosen by the challenger played with the challenged"""
     #args of form e.g. ("martian chess", "player 2", "player 3", "player 4"...)
-    knownGames = ("tic-tac-toe")
+    #need to check for correct number of players for each game
     chosenGame = args[0]
     if len(args) >= 2:
         if chosenGame in knownGames:
@@ -84,9 +85,13 @@ async def newGame(ctx, *args):
             for member in mem:
                 names.append(member.name)
             validPlayers = True
+            challenged = []
             for i in range(len(args)-1):
                 if args[i+1] not in names:
                     validPlayers = False
+                    break
+                else:
+                    challenged.append(args[i+1])
 
             if validPlayers:
                 success = False 
@@ -102,14 +107,20 @@ async def newGame(ctx, *args):
                         game = None
                         if chosenGame == "tic-tac-toe":
                             game = ticTacToe.TicTacToe()
-                            filename = "ticTacToe"
                         #other games go here
-                        filename += str(i+1)
-                        filename += ".txt"
+                        filename = "game" + str(i+1) + ".txt"
                         getSave.save(game, filename)
-                        for j in range(len(args)-1):
-                            gameRooms[i].append(args[j+1])
+                        for player in challenged:
+                            gameRooms[i].append(player)
                         getSave.save(gameRooms, "gamerooms.txt")
+                        welcome = "Welcome. This is a game of " + chosenGame + " between: " + ctx.message.author.name
+                        for i in range(len(challenged)):
+                            if i == len(challenged) - 1:
+                               welcome += " and "
+                            else:
+                                welcome += ", "
+                            welcome += challenged[i]
+                        await bot.send_message(channel, welcome)
                         success = True
                         break
                 if not success:
@@ -135,7 +146,7 @@ async def place(ctx, move : int):
     elif channel == "gameroom-4":
         room = 4
 
-    filename = "ticTacToe" + str(room) + ".txt"
+    filename = "game" + str(room) + ".txt"
     gameRooms = getSave.get("gamerooms.txt")
     theBoard = getSave.get(filename)
     if room > 0:
@@ -166,7 +177,7 @@ async def place(ctx, move : int):
                         await bot.say("It's a tie.")
                     gameRooms[room-1] = []
                     getSave.save(gameRooms, "gamerooms.txt")
-            except board.IllegalMoveError as er:
+            except ticTacToe.IllegalMoveError as er:
                 await bot.say("IllegalMoveError caught: {}".format(er.message))
         else:
             await bot.say("It ain't your turn sunshine.")
