@@ -13,6 +13,7 @@ TOKEN="token.txt"
 description = '''CRC Gamemaster Bot'''
 bot = commands.Bot(command_prefix='$', description=description)
 knownGames = ("tic-tac-toe")
+serverName = 'CRC Buddies'
 
 @bot.event
 async def on_message(message):
@@ -98,7 +99,7 @@ async def newGame(ctx, *args):
                 for i in range(len(gameRooms)):
                     if len(gameRooms[i]) < 1:
                         channelName = "gameroom-" + str(i+1)
-                        channel = discord.utils.get(bot.get_all_channels(), server__name='CRC Buddies', name=channelName)
+                        channel = discord.utils.get(bot.get_all_channels(), server__name=serverName, name=channelName)
                         await bot.say("You have been allocated gameroom-" + str(i+1))
 
                         gameRooms[i].append(chosenGame)
@@ -169,12 +170,18 @@ async def place(ctx, move : int):
                     getSave.save(theBoard, filename)
                     getSave.save(gameRooms, "gamerooms.txt")
                 else:
+                    outcome = ""
                     if theBoard.getWinner() == "X":
                         await bot.say("X gon' give it to ya, since it won!\nVictory for: " + gameRooms[room-1][2])
+                        outcome = gameRooms[room-1][2] +  " has beaten " + gameRooms[room-1][3] + " at tic-tac-toe."
                     elif theBoard.getWinner() == "O":
-                        await bot.say("OMG O won!!!\nVictory for: " + gameRoom[room-1][3])
+                        await bot.say("OMG O won!!!\nVictory for: " + gameRooms[room-1][3])
+                        outcome = gameRooms[room-1][3] + " has beaten " + gameRooms[room-1][2] + " at tic-tac-toe."
                     else:
                         await bot.say("It's a tie.")
+                        outcome = gameRooms[room-1][2] + " and " + gameRooms[room-1][3] + " have tied at tic-tac-toe."
+                    lobby = discord.utils.get(bot.get_all_channels(), server__name=serverName, name='lobby')
+                    await bot.send_message(lobby, outcome)
                     gameRooms[room-1] = []
                     getSave.save(gameRooms, "gamerooms.txt")
             except ticTacToe.IllegalMoveError as er:

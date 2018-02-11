@@ -1,3 +1,8 @@
 *.txt
 __pycache__
 *.pyc
+iBoard1.png
+iBoard2.png
+iBoard3.png
+iBoard4.png
+*.sh
