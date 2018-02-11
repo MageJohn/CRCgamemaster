@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import getSave
 import ticTacToe
+import sevens
 from PIL import Image
 
 # TO DO:
@@ -13,7 +14,7 @@ NUM_GAMEROOMS = 4
 
 description = '''CRC Gamemaster Bot'''
 bot = commands.Bot(command_prefix='$', description=description)
-GAMES = {"tic-tac-toe": (2, 2, ticTacToe.TicTacToe)} # format: {gameName: (minPlayers, maxPlayers, gameObject) ...}
+GAMES = {"tic-tac-toe": (2, 2, ticTacToe.TicTacToe), "sevens": (3, 7, sevens.Sevens)} # format: {gameName: (minPlayers, maxPlayers, gameObject) ...}
 serverName = 'CRC Buddies'
 
 @bot.event
@@ -27,7 +28,6 @@ async def on_ready():
     print(bot.user.name)
     print(bot.user.id)
     print('------')
-
 
 @bot.command()
 async def rooms():
@@ -59,9 +59,9 @@ async def rooms():
 @bot.command()
 async def guide(game : str):
     """Outputs guide to game"""
-    if game in knownGames:
+    if game in GAMES:
         if game == "tic-tac-toe":
-            await bot.say("The board positions are:\n```0|1|2\n-----\n3|4|5\n-----\n6|7|8```")
+            await bot.say("The board positions are:\n```0|1|2\n-----\n3|4|5\n-----\n6|7|8```\nThe command to place your piece at position 0 is $place 0")
         #other games go here
     else:
         await bot.say("I'm sorry, I don't know that game")
@@ -129,6 +129,14 @@ async def newGame(ctx, *args):
                             gameRooms[i].append(player)
                         getSave.save(gameRooms, "gamerooms.txt")
                         await bot.purge_from(channel)
+                        role = discord.utils.get(ctx.message.server.roles, name=channelName)
+                        for member in mem:
+                            await bot.remove_roles(member, role)
+                        for playerName in challenged:
+                            player = discord.utils.get(ctx.message.server.members, name=playerName)
+                            await bot.add_roles(player, role)
+                        initiator = discord.utils.get(ctx.message.server.members, name=ctx.message.author.name)
+                        await bot.add_roles(initiator, role)
                         welcome = "Welcome. This is a game of " + chosenGame + " between: " + ctx.message.author.name
                         for i in range(len(challenged)):
                             if i == len(challenged) - 1:
