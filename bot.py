@@ -163,7 +163,7 @@ async def place(ctx, move : int):
                 iBoardFileName = "iBoard" + str(room) + ".png"
                 iBoard.save(iBoardFileName)
                 await bot.upload(iBoardFileName)
-                if theBoard.getWinner() == None:
+                if theBoard.getWinner() == None and turn < 9:
                     turn += 1
                     gameRooms[room-1][1] = str(turn)
                     getSave.save(theBoard, filename)
