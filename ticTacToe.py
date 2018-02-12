@@ -24,16 +24,16 @@ class TicTacToe():
         sym is either 'X' or 'O'
         """
         
-        if sym not in ['X', 'O']:
-            raise IllgalMoveError("{} is not a valid piece".format(sym))
+        if sym not in self.syms.keys():
+            raise utils.IllgalMoveError("{} is not a valid piece".format(sym))
 
         if not pos >= 0 or not pos < len(self.board):
-            raise IllegalMoveError("{} is out of bounds".format(pos))
+            raise utils.IllegalMoveError("{} is out of bounds".format(pos))
 
-        if not self.board[pos]:
-            self.board[pos] = sym
-        else:
-            raise IllegalMoveError("{} is already taken".format(pos))
+        if self.board[pos]:
+            raise utils.IllegalMoveError("{} is already taken".format(pos))
+
+        self.board[pos] = sym
 
     def render(self):
         """Renders the state of the board and returns it as a PIL image."""

@@ -16,6 +16,10 @@ GAMES = {"tic-tac-toe": (2, 2, ticTacToe.TicTacToe), "sevens": (3, 7, sevens.Sev
 voice = None
 locked = False
 
+def unlock():
+    global locked
+    locked = False
+
 @bot.event
 async def on_ready():
     print('Logged in as')
@@ -26,25 +30,33 @@ async def on_ready():
 @bot.command(pass_context=True)
 async def summonBot(ctx):
     """summons the bot to speak on command"""
-    generalVoiceChannel = discord.utils.find(lambda c: c.type == discord.ChannelType.voice and c.name == 'commentary', ctx.message.channel.server.channels)
     global voice
+    if voice:
+        return await bot.say("I have yet been summoned.")
+    generalVoiceChannel = discord.utils.find(lambda c: c.type == discord.ChannelType.voice and c.name == 'commentary', ctx.message.channel.server.channels)
     voice = await bot.join_voice_channel(generalVoiceChannel)
 
 @bot.command()
-async def bansishBot():
+async def banishBot():
     """banishes the bot from the voice channel"""
     global voice
-    voice.disconnect()
+    if not voice:
+        return await bot.say("I'm already banished dear.")
+    await voice.disconnect()
     voice = None
+    global locked
+    locked = False
 
 @bot.command(pass_context=True)
-async def say(ctx, content : str):
-    """Speaks a provided string in the \'general\' voice channel.Enclose in \"\". Abusers will be banned."""
+async def say(ctx, content : str, accent="uk"):
+    """Speaks a provided string in the \'commentary\' voice channel.Enclose in \"\". Abusers will be banned. 3 accents are available: uk, us and au, this is optional and will default to uk. Syntax is $say \"message\" accent """
     if not voice:
         return await bot.say("No one hath summoned me. Do this with $summonBot")
     global locked
     if locked:
         return await bot.say("I'm busy, sorry.")
+    if accent not in ("uk", "us", "au"):
+        return await bot.say("I don't know accent: {}.".format(accent))
     locked = True
     spoken = utils.get("spoken.txt")
     authorName = ctx.message.author.name
@@ -54,13 +66,12 @@ async def say(ctx, content : str):
     else:
         spoken[authorName] = [content]
 
-    tts = gTTS(text=textToSay, lang='en')
+    tts = gTTS(text=textToSay, lang="en-{}".format(accent))
     filename = "speech{}{}.mp3".format(authorName.replace(" ", "-"),len(spoken[authorName]))
     tts.save(filename)
     utils.save(spoken, "spoken.txt")
-    player = voice.create_ffmpeg_player(filename)
+    player = voice.create_ffmpeg_player(filename, after=unlock)
     player.start()
-    locked = False
 
 @bot.command(pass_context=True)
 async def resetAll(ctx):

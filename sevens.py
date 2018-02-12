@@ -5,8 +5,7 @@ class Sevens:
         self.deck = []
         self.board = []
         self.iCards = {}
-        self.noPlayers = noPlayers
-
+        self.noPlayers = noPlayers 
 
         for i in range(len(self.suits)):
             column = []
@@ -18,4 +17,6 @@ class Sevens:
                 column.append(None)
                 self.iCards[card] = Image.open("./{}.png".format(card))
             self.board.append(column)
+
+
 
