@@ -13,6 +13,8 @@ description = '''CRC Gamemaster Bot'''
 bot = commands.Bot(command_prefix='$', description=description)
 # format: {gameName: (minPlayers, maxPlayers, gameObject), ..}
 GAMES = {"tic-tac-toe": (2, 2, ticTacToe.TicTacToe), "sevens": (3, 7, sevens.Sevens)}
+voice = None
+locked = False
 
 @bot.event
 async def on_ready():
@@ -22,18 +24,28 @@ async def on_ready():
     print('------')
 
 @bot.command(pass_context=True)
-async def botSpeak(ctx):
-    generalVoiceChannel = discord.utils.find(lambda c: c.type == discord.ChannelType.voice and c.name == 'general', ctx.message.channel.server.channels)
-    await bot.join_voice_channel(generalVoiceChannel)
+async def summonBot(ctx):
+    """summons the bot to speak on command"""
+    generalVoiceChannel = discord.utils.find(lambda c: c.type == discord.ChannelType.voice and c.name == 'commentary', ctx.message.channel.server.channels)
+    global voice
+    voice = await bot.join_voice_channel(generalVoiceChannel)
+
+@bot.command()
+async def bansishBot():
+    """banishes the bot from the voice channel"""
+    global voice
+    voice.disconnect()
+    voice = None
 
 @bot.command(pass_context=True)
-async def sayThis(ctx, content : str):
+async def say(ctx, content : str):
     """Speaks a provided string in the \'general\' voice channel.Enclose in \"\". Abusers will be banned."""
-
-    #if not discord.opus.is_loaded():
-        #discord.opus.load_opus()
-    generalVoiceChannel = discord.utils.find(lambda c: c.type == discord.ChannelType.voice, ctx.message.channel.server.channels)
-    #generalVoiceChannel = discord.utils.get(ctx.message.server.channels, name='General', type='voice')
+    if not voice:
+        return await bot.say("No one hath summoned me. Do this with $summonBot")
+    global locked
+    if locked:
+        return await bot.say("I'm busy, sorry.")
+    locked = True
     spoken = utils.get("spoken.txt")
     authorName = ctx.message.author.name
     textToSay = ("{} says {}".format(authorName, content))
@@ -43,9 +55,12 @@ async def sayThis(ctx, content : str):
         spoken[authorName] = [content]
 
     tts = gTTS(text=textToSay, lang='en')
-    print(spoken)
-    tts.save("speech{}{}.mp3".format(authorName.replace(" ", "-"), len(spoken[authorName])))
+    filename = "speech{}{}.mp3".format(authorName.replace(" ", "-"),len(spoken[authorName]))
+    tts.save(filename)
     utils.save(spoken, "spoken.txt")
+    player = voice.create_ffmpeg_player(filename)
+    player.start()
+    locked = False
 
 @bot.command(pass_context=True)
 async def resetAll(ctx):
@@ -188,6 +203,8 @@ async def place(ctx, move):
         utils.save(gameRooms, "gameRooms.txt")
 
 if __name__ == "__main__":
+    if not discord.opus.is_loaded():
+        discord.opus.load_opus()
     with open(TOKEN) as token:
         token = token.read()
 
