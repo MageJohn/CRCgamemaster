@@ -22,42 +22,30 @@ async def on_ready():
     print('------')
 
 @bot.command(pass_context=True)
+async def botSpeak(ctx):
+    generalVoiceChannel = discord.utils.find(lambda c: c.type == discord.ChannelType.voice and c.name == 'general', ctx.message.channel.server.channels)
+    await bot.join_voice_channel(generalVoiceChannel)
+
+@bot.command(pass_context=True)
 async def sayThis(ctx, content : str):
     """Speaks a provided string in the \'general\' voice channel.Enclose in \"\". Abusers will be banned."""
 
     #if not discord.opus.is_loaded():
         #discord.opus.load_opus()
-    message = ctx.message
-    channel = message.channel
-    print (channel.name)
-    server = channel.server
-    print (server.name)
-    channels = server.channels
-    for chan in channels:
-        print(chan.name)
-    generalVoiceChannel = None
-    for chan in channels:
-        if chan.type == 'voice':
-            print("{} is a voice channel".format(chan.name))
-    print("\n\n***********************************\n\n")
-    generalVoiceChannel = discord.utils.find(lambda c: c.type == 'voice', channels)
+    generalVoiceChannel = discord.utils.find(lambda c: c.type == discord.ChannelType.voice, ctx.message.channel.server.channels)
     #generalVoiceChannel = discord.utils.get(ctx.message.server.channels, name='General', type='voice')
-    print(generalVoiceChannel.name)
-    if generalVoiceChannel is not None:
-        print(generalVoiceChannel.name)
-    else:
-        print("None.")
-    await bot.join_voice_channel(generalVoiceChannel)
     spoken = utils.get("spoken.txt")
     authorName = ctx.message.author.name
     textToSay = ("{} says {}".format(authorName, content))
-    if spoken[authorName]:
+    if authorName in spoken:
         spoken[authorName].append(content)
     else:
         spoken[authorName] = [content]
 
     tts = gTTS(text=textToSay, lang='en')
+    print(spoken)
     tts.save("speech{}{}.mp3".format(authorName.replace(" ", "-"), len(spoken[authorName])))
+    utils.save(spoken, "spoken.txt")
 
 @bot.command(pass_context=True)
 async def resetAll(ctx):
